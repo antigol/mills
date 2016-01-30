@@ -17,6 +17,8 @@ private:
 	QList<QGraphicsEllipseItem*> piecesA, piecesB;
 
 	MillState state;
+	QGraphicsEllipseItem* selected;
+	int turn;
 };
 
 #endif // BOARD_HH

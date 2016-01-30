@@ -8,6 +8,8 @@ constexpr double positions[3*8][2] = {
 	{-b,-b}, {0,-b}, {b,-b}, {b,0}, {b,b}, {0,b}, {-b,b}, {-b,0},
 	{-a,-a}, {0,-a}, {a,-a}, {a,0}, {a,a}, {0,a}, {-a,a}, {-a,0},
 };
+const QColor colorA(Qt::yellow);
+const QColor colorB(Qt::red);
 
 /* 00       01       02
  *    08    09    10
@@ -30,20 +32,25 @@ Board::Board(QObject* parent) : QGraphicsScene(parent)
 	addLine(-a,0, -c,0);
 
 	for (int i = 0; i < 9; ++i) {
-		auto piece = addEllipse(-r, -r, 2*r, 2*r, QPen(), QBrush(Qt::yellow));
+		auto piece = addEllipse(-r, -r, 2*r, 2*r, QPen(), QBrush(colorA));
 		piece->setPos(-c-3*r, -c+i*2*c/8);
+		piece->setData(0, 1);
 		piecesA << piece;
 	}
 	for (int i = 0; i < 9; ++i) {
-		auto piece = addEllipse(-r, -r, 2*r, 2*r, QPen(), QBrush(QColor(240,0,0)));
+		auto piece = addEllipse(-r, -r, 2*r, 2*r, QPen(), QBrush(colorB));
 		piece->setPos(+c+3*r, -c+i*2*c/8);
+		piece->setData(0, 2);
 		piecesB << piece;
 	}
+
+	selected = nullptr;
+	turn = 0;
 }
 
 void Board::mousePressEvent(QGraphicsSceneMouseEvent* mouse)
 {
-	int imin = 0;
+	int idthere = 0;
 	int dmin = c;
 	for (int i = 0; i < 24; ++i) {
 		int dx = mouse->scenePos().x() - positions[i][0];
@@ -52,16 +59,49 @@ void Board::mousePressEvent(QGraphicsSceneMouseEvent* mouse)
 
 		if (d < dmin) {
 			dmin = d;
-			imin = i;
+			idthere = i;
 		}
 	}
 
-	qDebug("imin=%d dmin=%d", imin, dmin);
+	qDebug("imin=%d dmin=%d", idthere, dmin);
 
 	if (dmin <= r) {
-		int x = positions[imin][0];
-		int y = positions[imin][1];
+		int x = positions[idthere][0];
+		int y = positions[idthere][1];
 
-		piecesA.first()->setPos(x, y);
+		QGraphicsEllipseItem* there = qgraphicsitem_cast<QGraphicsEllipseItem*>(itemAt(x, y, QTransform()));
+
+
+		if (turn < 2*9) {
+			if (there == nullptr) {
+				if (turn % 2 == 0) {
+					piecesA[turn / 2]->setPos(x, y);
+				} else {
+					piecesB[turn / 2]->setPos(x, y);
+				}
+				turn++;
+			}
+		} else {
+			if (there != nullptr) {
+				if ((turn % 2 == 0 && piecesA.contains(there)) || (turn % 2 == 1 && piecesB.contains(there))) {
+					if (selected) selected->setBrush(selected->data(0) == 1 ? colorA : colorB);
+					selected = there;
+					selected->setBrush(Qt::black);
+					selected->setData(1, idthere);
+				}
+			} else if (selected != nullptr && there == nullptr) {
+				if (/* allowed */true) {
+					selected->setPos(x, y);
+					selected->setBrush(selected->data(0) == 1 ? colorA : colorB);
+					selected = nullptr;
+					turn++;
+				}
+			}
+		}
+	} else {
+		if (selected) {
+			selected->setBrush(selected->data(0) == 1 ? colorA : colorB);
+			selected = nullptr;
+		}
 	}
 }
