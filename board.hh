@@ -14,11 +14,18 @@ public:
 private:
 	virtual void mousePressEvent(QGraphicsSceneMouseEvent* mouse) override;
 
+	bool ismill(int cell);
+
 	QList<QGraphicsEllipseItem*> piecesA, piecesB;
 
-	MillState state;
 	QGraphicsEllipseItem* selected;
 	int turn;
+	bool choosetoremove;
+	int amountInA;
+	int amountInB;
+
+	const QColor colorA = Qt::yellow;
+	const QColor colorB = Qt::red;
 };
 
 #endif // BOARD_HH

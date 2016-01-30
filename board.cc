@@ -8,8 +8,8 @@ constexpr double positions[3*8][2] = {
 	{-b,-b}, {0,-b}, {b,-b}, {b,0}, {b,b}, {0,b}, {-b,b}, {-b,0},
 	{-a,-a}, {0,-a}, {a,-a}, {a,0}, {a,a}, {0,a}, {-a,a}, {-a,0},
 };
-const QColor colorA(Qt::yellow);
-const QColor colorB(Qt::red);
+constexpr int PLAYERID = 0;
+constexpr int CELLPOS = 1;
 
 /* 00       01       02
  *    08    09    10
@@ -34,18 +34,23 @@ Board::Board(QObject* parent) : QGraphicsScene(parent)
 	for (int i = 0; i < 9; ++i) {
 		auto piece = addEllipse(-r, -r, 2*r, 2*r, QPen(), QBrush(colorA));
 		piece->setPos(-c-3*r, -c+i*2*c/8);
-		piece->setData(0, 1);
+		piece->setData(PLAYERID, 1);
+		piece->setData(CELLPOS, -1);
 		piecesA << piece;
 	}
 	for (int i = 0; i < 9; ++i) {
 		auto piece = addEllipse(-r, -r, 2*r, 2*r, QPen(), QBrush(colorB));
 		piece->setPos(+c+3*r, -c+i*2*c/8);
-		piece->setData(0, 2);
+		piece->setData(PLAYERID, 2);
+		piece->setData(CELLPOS, -1);
 		piecesB << piece;
 	}
 
 	selected = nullptr;
 	turn = 0;
+	choosetoremove = false;
+	amountInA = 9;
+	amountInB = 9;
 }
 
 void Board::mousePressEvent(QGraphicsSceneMouseEvent* mouse)
@@ -63,7 +68,7 @@ void Board::mousePressEvent(QGraphicsSceneMouseEvent* mouse)
 		}
 	}
 
-	qDebug("imin=%d dmin=%d", idthere, dmin);
+	//qDebug("imin=%d dmin=%d", idthere, dmin);
 
 	if (dmin <= r) {
 		int x = positions[idthere][0];
@@ -71,37 +76,75 @@ void Board::mousePressEvent(QGraphicsSceneMouseEvent* mouse)
 
 		QGraphicsEllipseItem* there = qgraphicsitem_cast<QGraphicsEllipseItem*>(itemAt(x, y, QTransform()));
 
-
-		if (turn < 2*9) {
-			if (there == nullptr) {
+		if (choosetoremove) {
+			if (there && there->data(PLAYERID).toInt() != (turn % 2) + 1) {
+				there->setData(CELLPOS, -1);
+				there->setPos(2*c, 0); // out of screen
+				there->hide();
 				if (turn % 2 == 0) {
-					piecesA[turn / 2]->setPos(x, y);
+					amountInB--;
 				} else {
-					piecesB[turn / 2]->setPos(x, y);
+					amountInA--;
 				}
 				turn++;
+				choosetoremove = false;
+			}
+		} else if (turn < 2*9) {
+			if (there == nullptr) {
+				auto piece = turn % 2 == 0 ? piecesA[turn / 2] : piecesB[turn / 2];
+				piece->setPos(x, y);
+				piece->setData(CELLPOS, idthere);
+				if (ismill(idthere))
+					choosetoremove = true;
+				else
+					turn++;
 			}
 		} else {
 			if (there != nullptr) {
 				if ((turn % 2 == 0 && piecesA.contains(there)) || (turn % 2 == 1 && piecesB.contains(there))) {
-					if (selected) selected->setBrush(selected->data(0) == 1 ? colorA : colorB);
+					if (selected) selected->setBrush(selected->data(PLAYERID) == 1 ? colorA : colorB);
 					selected = there;
 					selected->setBrush(Qt::black);
-					selected->setData(1, idthere);
 				}
 			} else if (selected != nullptr && there == nullptr) {
-				if (/* allowed */true) {
+				if ((turn%2==0 ? amountInA <= 3 : amountInB <= 3) || connectedto[selected->data(CELLPOS).toInt()].contains(idthere)) {
 					selected->setPos(x, y);
-					selected->setBrush(selected->data(0) == 1 ? colorA : colorB);
+					selected->setData(CELLPOS, idthere);
+					selected->setBrush(selected->data(PLAYERID) == 1 ? colorA : colorB);
 					selected = nullptr;
-					turn++;
+
+					if (ismill(idthere))
+						choosetoremove = true;
+					else
+						turn++;
 				}
 			}
 		}
 	} else {
 		if (selected) {
-			selected->setBrush(selected->data(0) == 1 ? colorA : colorB);
+			selected->setBrush(selected->data(PLAYERID) == 1 ? colorA : colorB);
 			selected = nullptr;
 		}
 	}
+}
+
+bool Board::ismill(int cell)
+{
+	for (int i = 0; i < 16; ++i) {
+		if (mills[i][0] == cell || mills[i][1] == cell || mills[i][2] == cell) {
+			int n = 0;
+			for (auto pce : piecesA) {
+				int x = pce->data(CELLPOS).toInt();
+				if (mills[i][0] == x || mills[i][1] == x || mills[i][2] == x) n++;
+			}
+			if (n == 3) return true;
+			n = 0;
+			for (auto pce : piecesB) {
+				int x = pce->data(CELLPOS).toInt();
+				if (mills[i][0] == x || mills[i][1] == x || mills[i][2] == x) n++;
+			}
+			if (n == 3) return true;
+		}
+	}
+	return false;
 }
