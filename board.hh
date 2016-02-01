@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <QGraphicsScene>
+#include <QTimeLine>
 #include "millstate.hh"
 
 class Board : public QGraphicsScene
@@ -23,6 +24,9 @@ public slots:
 signals:
 	void humanPlayed();
 
+private slots:
+	void drawMovement(qreal value);
+
 private:
 	virtual void mousePressEvent(QGraphicsSceneMouseEvent* mouse) override;
 
@@ -35,6 +39,7 @@ private:
 	bool m_waitHuman;
 
 	QColor m_color[2] = {Qt::yellow, Qt::red};
+	QTimeLine m_timeline;
 };
 
 #endif // BOARD_HH

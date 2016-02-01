@@ -2,73 +2,93 @@
 
 BotMills::BotMills(QObject *parent) : QThread(parent)
 {
-	maxtime = 6000;
+	m_maxtime = 10000;
 }
 
-void BotMills::play(MillState state, int player)
+void BotMills::play(MillState initialstate, int player)
 {
-	this->state = state;
-	this->player = player;
+	this->m_initialstate = initialstate;
+	this->m_player = player;
 
 	start();
 }
 
-bool BotMills::private_play(MillState state, int player, int deepness, MillState& result, double& score)
+bool BotMills::private_play(const MillState& initialstate, int player, int deepness, MillState& result)
 {
-	QVector<MillState> possibilities = state.possibilities(player);
-
-	if (possibilities.isEmpty()) {
-		result = state;
-		score = 0.0;
-		return true;
-	}
-
-	if (timer.elapsed() > maxtime) {
-		qDebug("out of time");
-		return false;
-	}
+	QVector<MillState> opportunities = initialstate.possibilities(player);
 
 	double bestscore = -1000;
-	MillState bestpossibility;
-	for (MillState s : possibilities) {
+	QVector<MillState> bestopportunity;
+	for (const MillState& opp : opportunities) {
 		double sc;
 
-		if (s.getKilled(1-player) > 6) {
+		if (opp.getKilled(1-player) > 6) {
 			sc = 100 + deepness;
 		} else if (deepness > 0) {
-			MillState ns;
-			double nsc;
-			if (!private_play(s, 1-player, deepness-1, ns, nsc)) return false;
-			sc = -nsc;
+			if (!private_play_more(opp, 1-player, deepness-1, sc)) return false;
+			sc = -sc;
 		} else {
-			sc = s.getKilled(1-player) - s.getKilled(player);
+			sc = opp.getKilled(1-player) - opp.getKilled(player);
 		}
 
 		if (sc > bestscore) {
 			bestscore = sc;
-			bestpossibility = s;
+			bestopportunity.clear();
+			bestopportunity << opp;
+		} else if (sc == bestscore) {
+			bestopportunity << opp;
 		}
 	}
 
-	//qDebug("deep %d player %d : score %d (%d possibilities)", deepness, player, bestscore, possibilities.size());
-	result = bestpossibility;
-	score = bestscore;
+	qDebug("deepness %d player %d : score %.1f (%d possibilities)", deepness, player, bestscore, opportunities.size());
+	result = bestopportunity[qrand() % bestopportunity.size()];
+	return true;
+}
+
+bool BotMills::private_play_more(const MillState& initialstate, int player, int deepness, double& score)
+{
+	QVector<MillState> opportunities = initialstate.possibilities(player);
+
+	if (opportunities.isEmpty()) {
+		score = 0.0;
+		return true;
+	}
+
+	if (m_chrono.elapsed() > m_maxtime) return false;
+
+	score = -1000;
+	for (const MillState& opp : opportunities) {
+		double sc;
+
+		if (opp.getKilled(1-player) > 6) {
+			sc = 100 + deepness;
+		} else if (deepness > 0) {
+			if (!private_play_more(opp, 1-player, deepness-1, sc)) return false;
+			sc = -sc;
+		} else {
+			sc = opp.getKilled(1-player) - opp.getKilled(player);
+		}
+
+		if (sc > score) score = sc;
+	}
 	return true;
 }
 
 void BotMills::run()
 {
-	timer.start();
+	m_chrono.start();
+
+	if (m_initialstate.possibilities(m_player).isEmpty()) {
+		m_result = m_initialstate;
+		return;
+	}
 
 	int lasttime = 0;
-	for (int deepness = 2; maxtime - timer.elapsed() > lasttime; ++deepness) {
-		double score = 0.0;
-		MillState output;
-		lasttime = timer.elapsed();
-		if (private_play(state, player, deepness, output, score)) {
-			qDebug("deepness %d: score %f time %d", deepness, score, timer.elapsed());
-			result = output;
+	for (int deepness = 2; m_maxtime - m_chrono.elapsed() > lasttime; ++deepness) {
+		lasttime = m_chrono.elapsed();
+		if (private_play(m_initialstate, m_player, deepness, m_result)) {
+			qDebug("deepness %d: time %d", deepness, m_chrono.elapsed() - lasttime);
 		}
-		lasttime = timer.elapsed() - lasttime;
+		lasttime = m_chrono.elapsed() - lasttime;
 	}
 }

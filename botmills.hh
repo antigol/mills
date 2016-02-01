@@ -11,20 +11,23 @@ class BotMills : public QThread
 public:
 	explicit BotMills(QObject *parent = 0);
 
-	void play(MillState state, int player);
+	void play(MillState initialstate, int player);
 
-	inline const MillState& getResult() const { return result; }
+	inline const MillState& getResult() const { return m_result; }
+
+	inline void setMaxTime(int maxtime) { m_maxtime = maxtime; }
 
 private:
-	bool private_play(MillState state, int player, int deepness, MillState& result, double& score);
+	bool private_play(const MillState& initialstate, int player, int deepness, MillState& result);
+	bool private_play_more(const MillState& initialstate, int player, int deepness, double& score);
 
 	void run() override;
 
-	MillState result;
-	MillState state;
-	int player;
-	QTime timer;
-	int maxtime;
+	MillState m_result;
+	MillState m_initialstate;
+	int m_player;
+	QTime m_chrono;
+	int m_maxtime;
 };
 
 #endif // BOTMILLS_H

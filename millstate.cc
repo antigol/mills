@@ -55,14 +55,14 @@ QVector<int> MillState::eatable(int player) const
 
 QVector<MillState> MillState::possibilities(int player) const
 {
-	QVector<MillState> ps;
+	QVector<MillState> poss;
 
 	if (notplaced[player] > 0) {
 		for (int i = 0; i < 24; ++i) {
 			if (cs[i] == -1) {
 				MillState clone = *this;
 				clone.add(player, i);
-				eataftermill(ps, clone, player, i);
+				eataftermill(poss, clone, player, i);
 			}
 		}
 	} else if (onboard[player] <= 3) {
@@ -77,7 +77,7 @@ QVector<MillState> MillState::possibilities(int player) const
 				for (int i : occupied) {
 					MillState clone = *this;
 					clone.move(i, j);
-					eataftermill(ps, clone, player, j);
+					eataftermill(poss, clone, player, j);
 				}
 			}
 		}
@@ -88,14 +88,14 @@ QVector<MillState> MillState::possibilities(int player) const
 					if (cs[j] == -1) {
 						MillState clone = *this;
 						clone.move(i, j);
-						eataftermill(ps, clone, player, j);
+						eataftermill(poss, clone, player, j);
 					}
 				}
 			}
 		}
 	}
 
-	return ps;
+	return poss;
 }
 
 void MillState::eataftermill(QVector<MillState>& poss, MillState& state, int player, int pos) const
