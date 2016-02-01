@@ -3,8 +3,7 @@
 
 #include <QVector>
 
-/* Players : A and B
- * Player A begins
+/* Players : 0 and 1
  *
  * 00       01       02
  *    08    09    10
@@ -21,9 +20,36 @@ const QVector<int> connectedto[3*8] = {
 	{17,23}, {16,18,9},   {17,19}, {18,11,20},   {19,21}, {20,22,13},   {21,23}, {15,16,22} // 16-23
 };
 
-const int mills[][3] = {
+const int mills[16][3] = {
 	{0,1,2}, {8,9,10}, {16,17,18}, {7,15,23}, {19,11,3}, {22,21,20}, {14,13,12}, {6,5,4},
 	{0,7,6}, {8,15,14}, {16,23,22}, {1,9,17}, {21,13,5}, {18,19,20}, {10,11,12}, {2,3,4}
+};
+
+const int millsfrom[24][2][3] = {
+	{{0, 1, 2}, {0, 7, 6}},
+	{{0, 1, 2}, {1, 9, 17}},
+	{{0, 1, 2}, {2, 3, 4}},
+	{{19, 11, 3}, {2, 3, 4}},
+	{{6, 5, 4}, {2, 3, 4}},
+	{{6, 5, 4}, {21, 13, 5}},
+	{{6, 5, 4}, {0, 7, 6}},
+	{{7, 15, 23}, {0, 7, 6}},
+	{{8, 9, 10}, {8, 15, 14}},
+	{{8, 9, 10}, {1, 9, 17}},
+	{{8, 9, 10}, {10, 11, 12}},
+	{{19, 11, 3}, {10, 11, 12}},
+	{{14, 13, 12}, {10, 11, 12}},
+	{{14, 13, 12}, {21, 13, 5}},
+	{{14, 13, 12}, {8, 15, 14}},
+	{{7, 15, 23}, {8, 15, 14}},
+	{{16, 17, 18}, {16, 23, 22}},
+	{{16, 17, 18}, {1, 9, 17}},
+	{{16, 17, 18}, {18, 19, 20}},
+	{{19, 11, 3}, {18, 19, 20}},
+	{{22, 21, 20}, {18, 19, 20}},
+	{{22, 21, 20}, {21, 13, 5}},
+	{{22, 21, 20}, {16, 23, 22}},
+	{{7, 15, 23}, {16, 23, 22}}
 };
 
 class MillState
@@ -31,17 +57,23 @@ class MillState
 public:
 	MillState();
 
-	bool isInPlacementPhase();
-	bool isPlayerATurn();
-	inline bool isPlayerBTurn() { return !isPlayerATurn(); }
+	void add(int player, int pos);
+	void move(int from, int to);
+	void remove(int pos);
+
+	bool ismill(int pos) const;
+	QVector<int> eatable(int player) const;
+
+	inline int getPlayerAt(int pos) const { return cs[pos]; }
+	inline int getNotPlaced(int player) const { return notplaced[player]; }
+	inline int getOnBoard(int player) const { return onboard[player]; }
+	inline int getKilled(int player) const { return killed[player]; }
 
 private:
-	int oa; // pieces out for A
-	int ob; // pieces out for B
-	int ka; // pieces killed for A
-	int kb; // pieces killed for B
-	int turn; // 1=A, 2=B
-	int cs[24]; // 0=empty, 1=A, 2=B
+	int notplaced[2];
+	int onboard[2];
+	int killed[2];
+	int cs[24]; // -1=empty
 };
 
 #endif // MILLSTATE_HH

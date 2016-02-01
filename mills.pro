@@ -15,8 +15,10 @@ CONFIG += c++11
 SOURCES += main.cc\
         mainwindow.cc \
     board.cc \
-    millstate.cc
+    millstate.cc \
+    botmills.cc
 
 HEADERS  += mainwindow.hh \
     board.hh \
-    millstate.hh
+    millstate.hh \
+    botmills.hh

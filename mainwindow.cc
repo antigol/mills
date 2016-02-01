@@ -22,5 +22,6 @@ MainWindow::~MainWindow()
 
 void MainWindow::newgame()
 {
-
+	m_board->setState(MillState());
+	m_board->setTurn(0);
 }

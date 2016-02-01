@@ -4,28 +4,30 @@
 #include <QWidget>
 #include <QGraphicsScene>
 #include "millstate.hh"
+#include "botmills.hh" // to move to mainwindow
 
 class Board : public QGraphicsScene
 {
 	Q_OBJECT
 public:
 	explicit Board(QObject *parent = 0);
+	void setState(const MillState& state);
+	void setTurn(int turn);
 
 private:
 	virtual void mousePressEvent(QGraphicsSceneMouseEvent* mouse) override;
 
-	bool ismill(int cell);
 
-	QList<QGraphicsEllipseItem*> piecesA, piecesB;
-
-	QGraphicsEllipseItem* selected;
 	int turn;
+	QList<QGraphicsEllipseItem*> pieces[2];
+	QGraphicsEllipseItem* selected;
 	bool choosetoremove;
-	int amountInA;
-	int amountInB;
 
-	const QColor colorA = Qt::yellow;
-	const QColor colorB = Qt::red;
+	MillState state;
+
+	const QColor color[2] = {Qt::yellow, Qt::red};
+
+	BotMills bot; // to move to mainwindow
 };
 
 #endif // BOARD_HH
