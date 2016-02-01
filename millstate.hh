@@ -63,6 +63,7 @@ public:
 
 	bool ismill(int pos) const;
 	QVector<int> eatable(int player) const;
+	QVector<MillState> possibilities(int player) const;
 
 	inline int getPlayerAt(int pos) const { return cs[pos]; }
 	inline int getNotPlaced(int player) const { return notplaced[player]; }
@@ -74,6 +75,8 @@ private:
 	int onboard[2];
 	int killed[2];
 	int cs[24]; // -1=empty
+
+	void eataftermill(QVector<MillState>& poss, MillState& state, int player, int pos) const;
 };
 
 #endif // MILLSTATE_HH

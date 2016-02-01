@@ -10,7 +10,7 @@ class BotMills : public QObject
 public:
 	explicit BotMills(QObject *parent = 0);
 
-	MillState play(MillState start, int player);
+	MillState play(MillState state, int player);
 };
 
 #endif // BOTMILLS_H

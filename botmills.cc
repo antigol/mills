@@ -5,27 +5,9 @@ BotMills::BotMills(QObject *parent) : QObject(parent)
 
 }
 
-MillState BotMills::play(MillState start, int player)
+MillState BotMills::play(MillState state, int player)
 {
-	if (start.getNotPlaced(player) > 0) {
-		for (int i = 0; i < 24; ++i) {
-			if (start.getPlayerAt(i) == -1) {
-				start.add(player, i);
-				return start;
-			}
-		}
-	}
+	QVector<MillState> poss = state.possibilities(player);
 
-	for (int i = 0; i < 24; ++i) {
-		if (start.getPlayerAt(i) == player) {
-			for (int j : connectedto[i]) {
-				if (start.getPlayerAt(j) == -1) {
-					start.move(i, j);
-					return start;
-				}
-			}
-		}
-	}
-
-	return start;
+	return poss[qrand() % poss.size()];
 }

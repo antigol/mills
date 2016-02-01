@@ -52,3 +52,66 @@ QVector<int> MillState::eatable(int player) const
 	}
 	return eas;
 }
+
+QVector<MillState> MillState::possibilities(int player) const
+{
+	QVector<MillState> ps;
+
+	if (notplaced[player] > 0) {
+		for (int i = 0; i < 24; ++i) {
+			if (cs[i] == -1) {
+				MillState clone = *this;
+				clone.add(player, i);
+				eataftermill(ps, clone, player, i);
+			}
+		}
+	} else if (onboard[player] <= 3) {
+		QVector<int> occupied;
+		for (int i = 0; i < 24; ++i) {
+			if (cs[i] == player) {
+				occupied << i;
+			}
+		}
+		for (int j = 0; j < 24; ++j) {
+			if (cs[j] == -1) {
+				for (int i : occupied) {
+					MillState clone = *this;
+					clone.move(i, j);
+					eataftermill(ps, clone, player, j);
+				}
+			}
+		}
+	} else {
+		for (int i = 0; i < 24; ++i) {
+			if (cs[i] == player) {
+				for (int j : connectedto[i]) {
+					if (cs[j] == -1) {
+						MillState clone = *this;
+						clone.move(i, j);
+						eataftermill(ps, clone, player, j);
+					}
+				}
+			}
+		}
+	}
+
+	return ps;
+}
+
+void MillState::eataftermill(QVector<MillState>& poss, MillState& state, int player, int pos) const
+{
+	if (state.ismill(pos)) {
+		QVector<int> eas = state.eatable(1 - player);
+		if (eas.isEmpty()) {
+			poss << state;
+		} else {
+			for (int a : eas) {
+				MillState clone = state;
+				clone.remove(a);
+				poss << clone;
+			}
+		}
+	} else {
+		poss << state;
+	}
+}
