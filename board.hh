@@ -17,7 +17,6 @@ public:
 private:
 	virtual void mousePressEvent(QGraphicsSceneMouseEvent* mouse) override;
 
-
 	int turn;
 	QList<QGraphicsEllipseItem*> pieces[2];
 	QGraphicsEllipseItem* selected;
@@ -28,6 +27,9 @@ private:
 	const QColor color[2] = {Qt::yellow, Qt::red};
 
 	BotMills bot; // to move to mainwindow
+
+private slots:
+	void botFinished();
 };
 
 #endif // BOARD_HH

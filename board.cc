@@ -41,6 +41,8 @@ Board::Board(QObject* parent) : QGraphicsScene(parent)
 
 	turn = 0;
 	setState(MillState());
+
+	connect(&bot, SIGNAL(finished()), this, SLOT(botFinished()));
 }
 
 void Board::setState(const MillState& state)
@@ -97,6 +99,8 @@ void Board::setTurn(int turn)
 
 void Board::mousePressEvent(QGraphicsSceneMouseEvent* mouse)
 {
+	if (bot.isRunning()) return;
+
 	int idthere = 0;
 	int dmin = c;
 	for (int i = 0; i < 24; ++i) {
@@ -111,6 +115,8 @@ void Board::mousePressEvent(QGraphicsSceneMouseEvent* mouse)
 	}
 
 	//qDebug("imin=%d dmin=%d", idthere, dmin);
+
+	int oldturn = turn;
 
 	if (dmin <= r) {
 		int x = positions[idthere][0];
@@ -169,9 +175,20 @@ void Board::mousePressEvent(QGraphicsSceneMouseEvent* mouse)
 		}
 	}
 
-	if (turn%2 == 1) {
-		setState(bot.play(state, 1));
-		turn++;
+	if (oldturn != turn) {
+		if (turn%2 == 1) {
+			bot.play(state, 1);
+		}
+	}
+}
+
+void Board::botFinished()
+{
+	setState(bot.getResult());
+	turn++;
+	if (state.possibilities(0).isEmpty()) {
+		turn++; // turn of player 0
+		bot.play(state, 1);
 	}
 }
 
