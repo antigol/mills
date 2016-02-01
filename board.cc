@@ -33,27 +33,27 @@ Board::Board(QObject* parent) : QGraphicsScene(parent)
 
 	for (int p : {0, 1}) {
 		for (int i = 0; i < 9; ++i) {
-			auto piece = addEllipse(-r, -r, 2*r, 2*r, QPen(), QBrush(color[p]));
+			auto piece = addEllipse(-r, -r, 2*r, 2*r, QPen(), QBrush(m_color[p]));
 			piece->setData(PLAYERID, p);
-			pieces[p] << piece;
+			m_pieces[p] << piece;
 		}
 	}
 
-	turn = 0;
+	m_turn = 0;
 	setState(MillState());
 
-	connect(&bot, SIGNAL(finished()), this, SLOT(botFinished()));
+	m_waitHuman = false;
 }
 
 void Board::setState(const MillState& state)
 {
-	this->state = state;
-	selected = nullptr;
-	choosetoremove = false;
+	this->m_state = state;
+	m_selected = nullptr;
+	m_choosetoremove = false;
 
 	for (int p : {0, 1}) {
-		for (auto pce : pieces[p]) {
-			pce->setBrush(color[p]);
+		for (auto pce : m_pieces[p]) {
+			pce->setBrush(m_color[p]);
 		}
 	}
 
@@ -62,7 +62,7 @@ void Board::setState(const MillState& state)
 	for (int k = 0; k < 24; ++k) {
 		int p = state.getPlayerAt(k);
 		if (p != -1) {
-			auto pce = pieces[p][i[p]];
+			auto pce = m_pieces[p][i[p]];
 			i[p]++;
 
 			pce->setPos(positions[k][0], positions[k][1]);
@@ -72,7 +72,7 @@ void Board::setState(const MillState& state)
 	}
 	for (int p : {0, 1}) {
 		while (i[p] < 9 - state.getNotPlaced(p)) {
-			auto pce = pieces[p][i[p]];
+			auto pce = m_pieces[p][i[p]];
 
 			pce->setPos(2*c, 0); // out of screen
 			pce->setData(CELLPOS, -1);
@@ -81,7 +81,7 @@ void Board::setState(const MillState& state)
 			i[p]++;
 		}
 		while (i[p] < 9) {
-			auto pce = pieces[p][i[p]];
+			auto pce = m_pieces[p][i[p]];
 
 			pce->setPos((2*p-1)*(c+3*r), -c+i[p]*2*c/8);
 			pce->setData(CELLPOS, -1);
@@ -92,14 +92,14 @@ void Board::setState(const MillState& state)
 	}
 }
 
-void Board::setTurn(int turn)
+void Board::acceptHumanEntry()
 {
-	this->turn = turn;
+	m_waitHuman = true;
 }
 
 void Board::mousePressEvent(QGraphicsSceneMouseEvent* mouse)
 {
-	if (bot.isRunning()) return;
+	if (!m_waitHuman) return;
 
 	int idthere = 0;
 	int dmin = c;
@@ -116,7 +116,7 @@ void Board::mousePressEvent(QGraphicsSceneMouseEvent* mouse)
 
 	//qDebug("imin=%d dmin=%d", idthere, dmin);
 
-	int oldturn = turn;
+	int oldturn = m_turn;
 
 	if (dmin <= r) {
 		int x = positions[idthere][0];
@@ -124,71 +124,62 @@ void Board::mousePressEvent(QGraphicsSceneMouseEvent* mouse)
 
 		QGraphicsEllipseItem* there = qgraphicsitem_cast<QGraphicsEllipseItem*>(itemAt(x, y, QTransform()));
 
-		if (choosetoremove) {
-			if (there && there->data(PLAYERID).toInt() != turn%2 && !state.ismill(idthere)) {
+		if (m_choosetoremove) {
+			if (there && there->data(PLAYERID).toInt() != m_turn%2 && !m_state.ismill(idthere)) {
 				there->setData(CELLPOS, -1);
 				there->setPos(2*c, 0); // out of screen
 				there->hide();
-				state.remove(idthere);
+				m_state.remove(idthere);
 
-				turn++;
-				choosetoremove = false;
+				m_turn++;
+				m_choosetoremove = false;
 			}
-		} else if (turn < 2*9) {
+		} else if (m_state.getNotPlaced(1) > 0) {
 			if (there == nullptr) {
-				auto piece = pieces[turn%2][turn/2];
+				auto piece = m_pieces[m_turn%2][m_turn/2];
 				piece->setPos(x, y);
 				piece->setData(CELLPOS, idthere);
-				state.add(turn%2, idthere);
-				if (state.ismill(idthere) && !state.eatable(1 - turn%2).isEmpty())
-					choosetoremove = true;
+				m_state.add(m_turn%2, idthere);
+				if (m_state.ismill(idthere) && !m_state.eatable(1 - m_turn%2).isEmpty())
+					m_choosetoremove = true;
 				else
-					turn++;
+					m_turn++;
 			}
 		} else {
 			if (there != nullptr) {
-				if (pieces[turn % 2].contains(there)) {
-					if (selected) selected->setBrush(color[selected->data(PLAYERID).toInt()]);
-					selected = there;
-					selected->setBrush(Qt::black);
+				if (m_pieces[m_turn % 2].contains(there)) {
+					if (m_selected) m_selected->setBrush(m_color[m_selected->data(PLAYERID).toInt()]);
+					m_selected = there;
+					m_selected->setBrush(Qt::black);
 				}
-			} else if (selected != nullptr && there == nullptr) {
-				int idfrom = selected->data(CELLPOS).toInt();
-				if (state.getOnBoard(turn%2) <= 3 || connectedto[idfrom].contains(idthere)) {
-					state.move(idfrom, idthere);
-					selected->setPos(x, y);
-					selected->setData(CELLPOS, idthere);
-					selected->setBrush(color[selected->data(PLAYERID).toInt()]);
-					selected = nullptr;
+			} else if (m_selected != nullptr && there == nullptr) {
+				int idfrom = m_selected->data(CELLPOS).toInt();
+				if (m_state.getOnBoard(m_turn%2) <= 3 || connectedto[idfrom].contains(idthere)) {
+					m_state.move(idfrom, idthere);
+					m_selected->setPos(x, y);
+					m_selected->setData(CELLPOS, idthere);
+					m_selected->setBrush(m_color[m_selected->data(PLAYERID).toInt()]);
+					m_selected = nullptr;
 
-					if (state.ismill(idthere) && !state.eatable(1 - turn%2).isEmpty())
-						choosetoremove = true;
+					if (m_state.ismill(idthere) && !m_state.eatable(1 - m_turn%2).isEmpty())
+						m_choosetoremove = true;
 					else
-						turn++;
+						m_turn++;
 				}
 			}
 		}
 	} else {
-		if (selected) {
-			selected->setBrush(color[selected->data(PLAYERID).toInt()]);
-			selected = nullptr;
+		if (m_selected) {
+			m_selected->setBrush(m_color[m_selected->data(PLAYERID).toInt()]);
+			m_selected = nullptr;
 		}
 	}
 
-	if (oldturn != turn) {
-		if (turn%2 == 1) {
-			bot.play(state, 1);
-		}
+	if (oldturn != m_turn) {
+		emit humanPlayed();
+		m_waitHuman = false;
 	}
 }
 
-void Board::botFinished()
-{
-	setState(bot.getResult());
-	turn++;
-	if (state.possibilities(0).isEmpty()) {
-		turn++; // turn of player 0
-		bot.play(state, 1);
-	}
-}
+
 

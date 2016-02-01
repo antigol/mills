@@ -4,7 +4,6 @@
 #include <QWidget>
 #include <QGraphicsScene>
 #include "millstate.hh"
-#include "botmills.hh" // to move to mainwindow
 
 class Board : public QGraphicsScene
 {
@@ -12,24 +11,30 @@ class Board : public QGraphicsScene
 public:
 	explicit Board(QObject *parent = 0);
 	void setState(const MillState& state);
-	void setTurn(int turn);
+	const MillState& state() const { return m_state; }
+	inline void setTurn(int turn) { m_turn = turn; }
+	inline int turn() const { return m_turn; }
+	void nextTurn() { m_turn++; }
+	inline int whoPlays() const { return m_turn%2; }
+
+public slots:
+	void acceptHumanEntry();
+
+signals:
+	void humanPlayed();
 
 private:
 	virtual void mousePressEvent(QGraphicsSceneMouseEvent* mouse) override;
 
-	int turn;
-	QList<QGraphicsEllipseItem*> pieces[2];
-	QGraphicsEllipseItem* selected;
-	bool choosetoremove;
+	int m_turn;
+	QList<QGraphicsEllipseItem*> m_pieces[2];
+	QGraphicsEllipseItem* m_selected;
+	bool m_choosetoremove;
 
-	MillState state;
+	MillState m_state;
+	bool m_waitHuman;
 
-	const QColor color[2] = {Qt::yellow, Qt::red};
-
-	BotMills bot; // to move to mainwindow
-
-private slots:
-	void botFinished();
+	QColor m_color[2] = {Qt::yellow, Qt::red};
 };
 
 #endif // BOARD_HH
