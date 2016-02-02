@@ -42,7 +42,7 @@ MainWindow::~MainWindow()
 void MainWindow::newgame_human()
 {
 	m_board->setState(MillState());
-	m_board->setTurn(0);
+	m_board->setWhoplay(0);
 
 	m_board->acceptHumanEntry();
 	statusBar()->showMessage("Ok, You begin");
@@ -57,7 +57,7 @@ void MainWindow::newgame_human()
 void MainWindow::newgame_bot()
 {
 	m_board->setState(MillState());
-	m_board->setTurn(0);
+	m_board->setWhoplay(0);
 
 	m_bot.play(m_board->state(), 0);
 	statusBar()->showMessage("I am thinking...");
@@ -95,7 +95,10 @@ void MainWindow::botFinished()
 	if (m_board->state().getKilled(m_board->whoPlays()) > 6) {
 		statusBar()->showMessage("I won that match.");
 	} else {
-		statusBar()->showMessage("Ok, Now it's your turn");
+		if (m_bot.willwin())
+			statusBar()->showMessage("I already won, but it's your turn");
+		else
+			statusBar()->showMessage("Ok, Now it's your turn");
 		m_board->acceptHumanEntry();
 	}
 	m_history << m_board->state();

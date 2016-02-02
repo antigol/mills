@@ -43,7 +43,7 @@ Board::Board(QObject* parent) : QGraphicsScene(parent)
 		}
 	}
 
-	m_turn = 0;
+	m_whoplay = 0;
 	setState(MillState());
 
 	m_waitHuman = false;
@@ -187,7 +187,7 @@ void Board::mousePressEvent(QGraphicsSceneMouseEvent* mouse)
 
 	//qDebug("imin=%d dmin=%d", idthere, dmin);
 
-	int oldturn = m_turn;
+	int oldplayer = m_whoplay;
 
 	if (dmin <= r) {
 		int x = positions[idthere][0];
@@ -196,46 +196,45 @@ void Board::mousePressEvent(QGraphicsSceneMouseEvent* mouse)
 		QGraphicsEllipseItem* there = qgraphicsitem_cast<QGraphicsEllipseItem*>(itemAt(x, y, QTransform()));
 
 		if (m_choosetoremove) {
-			if (there && there->data(PLAYERID).toInt() != m_turn%2 && !m_state.ismill(idthere)) {
+			if (there && there->data(PLAYERID).toInt() != m_whoplay && !m_state.ismill(idthere)) {
 				MillState state = m_state;
 				state.remove(idthere);
 				setState(state);
 
-				m_turn++;
+				nextTurn();
 			}
 		} else if (m_state.getNotPlaced(1) > 0) {
 			if (there == nullptr) {
 				MillState state = m_state;
-				state.add(m_turn%2, idthere);
+				state.add(m_whoplay, idthere);
 				setState(state);
 
-				if (m_state.ismill(idthere) && !m_state.eatable(1 - m_turn%2).isEmpty())
+				if (m_state.ismill(idthere) && !m_state.eatable(1 - m_whoplay).isEmpty())
 					m_choosetoremove = true;
 				else
-					m_turn++;
+					nextTurn();
 			}
 		} else {
 			if (there != nullptr) {
-				if (m_pieces[m_turn%2].contains(there)) {
+				if (m_pieces[m_whoplay].contains(there)) {
 					if (m_selected) m_selected->setBrush(m_color[m_selected->data(PLAYERID).toInt()]);
 					m_selected = there;
 					m_selected->setBrush(Qt::black);
 				}
 			} else if (m_selected != nullptr && there == nullptr) {
 				int idfrom = m_selected->data(CELLPOS).toInt();
-				if (m_state.getOnBoard(m_turn%2) <= 3 || connectedto[idfrom].contains(idthere)) {
+				if (m_state.getOnBoard(m_whoplay) <= 3 || connectedto[idfrom].contains(idthere)) {
 					MillState state = m_state;
 					state.move(idfrom, idthere);
 					setState(state);
 
-					if (m_state.ismill(idthere) && !m_state.eatable(1 - m_turn%2).isEmpty())
+					if (m_state.ismill(idthere) && !m_state.eatable(1 - m_whoplay).isEmpty())
 						m_choosetoremove = true;
 					else
-						m_turn++;
+						nextTurn();
 				}
 			}
 		}
-
 	} else {
 		if (m_selected) {
 			m_selected->setBrush(m_color[m_selected->data(PLAYERID).toInt()]);
@@ -243,7 +242,7 @@ void Board::mousePressEvent(QGraphicsSceneMouseEvent* mouse)
 		}
 	}
 
-	if (oldturn != m_turn) {
+	if (oldplayer != m_whoplay) {
 		emit humanPlayed();
 		m_waitHuman = false;
 	}

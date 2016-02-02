@@ -17,6 +17,7 @@ public:
 
 	inline int maxTime() const { return m_maxtime; }
 	inline void setMaxTime(int maxtime) { m_maxtime = maxtime; }
+	inline bool willwin() const { return m_willwin; }
 
 private:
 	bool private_play(const MillState& initialstate, int player, int deepness, MillState& result);
@@ -29,6 +30,7 @@ private:
 	int m_player;
 	QTime m_chrono;
 	int m_maxtime;
+	bool m_willwin;
 };
 
 #endif // BOTMILLS_H
