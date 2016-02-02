@@ -25,7 +25,6 @@ signals:
 
 private slots:
 	void drawMigration(qreal value);
-	void finishMigration();
 
 private:
 	virtual void mousePressEvent(QGraphicsSceneMouseEvent* mouse) override;

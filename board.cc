@@ -2,6 +2,7 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsEllipseItem>
 #include <QApplication>
+#include <QDebug>
 
 constexpr double a = 30, b = 65, c = 100, r = 10;
 constexpr double positions[3*8][2] = {
@@ -47,14 +48,14 @@ Board::Board(QObject* parent) : QGraphicsScene(parent)
 	setState(MillState());
 
 	m_waitHuman = false;
-	m_timeline.setDuration(200);
+	m_timeline.setDuration(300);
 	connect(&m_timeline, SIGNAL(valueChanged(qreal)), SLOT(drawMigration(qreal)));
 }
 
 void Board::setState(const MillState& state)
 {
 	while (m_timeline.state() == QTimeLine::Running) {
-		QApplication::instance()->processEvents(QEventLoop::AllEvents, 10);
+		QApplication::instance()->processEvents(QEventLoop::ExcludeUserInputEvents, 10);
 	}
 
 	m_selected = nullptr;
@@ -99,21 +100,13 @@ void Board::setState(const MillState& state)
 		Q_ASSERT(orig[p].size() == dest[p].size());
 		Q_ASSERT(orig[p].size() == 9);
 
-		qSort(orig[p]);
-		qSort(dest[p]);
-		int end = 9;
-		for (int i = 0; i < end; ++i) {
-			if (orig[p][i] < dest[p][i]) {
-				orig[p].move(i, 8);
-				i--;
-				end--;
-			} else if (dest[p][i] < orig[p][i]) {
-				dest[p].move(i, 8);
-				i--;
-				end--;
+		for (int i = 0; i < 9; ++i) {
+			int x = orig[p][i];
+			int j = dest[p].indexOf(x);
+			if (j != -1) {
+				dest[p].swap(i, j);
 			}
 		}
-
 
 		for (int i = 0; i < 9; ++i) {
 			int k0 = orig[p][i];
@@ -153,18 +146,6 @@ void Board::drawMigration(qreal value)
 		}
 	}
 
-	update();
-}
-
-void Board::finishMigration()
-{
-	for (int p : {0, 1}) {
-		for (auto pce : m_pieces[p]) {
-			QPointF p = pce->data(FINALPOS).toPointF();
-			pce->setData(INITIALPOS, p);
-			pce->setPos(p);
-		}
-	}
 	update();
 }
 
