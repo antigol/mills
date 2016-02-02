@@ -200,7 +200,7 @@ void Board::mousePressEvent(QGraphicsSceneMouseEvent* mouse)
 				if (m_pieces[m_whoplay].contains(there)) {
 					if (m_selected) m_selected->setBrush(m_color[m_selected->data(PLAYERID).toInt()]);
 					m_selected = there;
-					m_selected->setBrush(Qt::black);
+					m_selected->setBrush(Qt::darkGray);
 				}
 			} else if (m_selected != nullptr && there == nullptr) {
 				int idfrom = m_selected->data(CELLPOS).toInt();

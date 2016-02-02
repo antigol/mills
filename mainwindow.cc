@@ -95,7 +95,7 @@ void MainWindow::botFinished()
 	if (m_board->state().getKilled(m_board->whoPlays()) > 6) {
 		statusBar()->showMessage("I won that match.");
 	} else {
-		if (m_bot.willwin())
+		if (m_bot.whowin() == 1 - m_board->whoPlays())
 			statusBar()->showMessage("I already won, but it's your turn");
 		else
 			statusBar()->showMessage("Ok, Now it's your turn");

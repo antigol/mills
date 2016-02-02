@@ -40,7 +40,8 @@ bool BotMills::private_play(const MillState& initialstate, int player, int deepn
 		}
 	}
 
-	if (bestscore >= 10) m_willwin = true;
+	if (bestscore >= 10) m_whowin = player;
+	if (bestscore <= 10) m_whowin = 1 - player;
 	//qDebug("deepness %d player %d : score %.1f (%d possibilities)", deepness, player, bestscore, opportunities.size());
 	result = bestopportunity[qrand() % bestopportunity.size()];
 	return true;
@@ -85,7 +86,7 @@ bool BotMills::private_play_more(const MillState& initialstate, int player, int 
 void BotMills::run()
 {
 	m_chrono.start();
-	m_willwin = false;
+	m_whowin = -1;
 
 	if (m_initialstate.possibilities(m_player).isEmpty()) {
 		m_result = m_initialstate;

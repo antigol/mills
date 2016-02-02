@@ -56,6 +56,7 @@ QVector<int> MillState::eatable(int player) const
 QVector<MillState> MillState::possibilities(int player) const
 {
 	QVector<MillState> poss;
+	poss.reserve(32);
 
 	if (notplaced[player] > 0) {
 		for (int i = 0; i < 24; ++i) {
