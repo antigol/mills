@@ -2,6 +2,7 @@
 #include <QMenuBar>
 #include <QGraphicsView>
 #include <QStatusBar>
+#include <QInputDialog>
 
 MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent)
@@ -23,6 +24,9 @@ MainWindow::MainWindow(QWidget *parent)
 	m_action_redo = history->addAction("Redo action", this, SLOT(redo()), QKeySequence::Redo);
 	m_action_undo->setDisabled(true);
 	m_action_redo->setDisabled(true);
+
+	QMenu* options = menuBar()->addMenu("Options");
+	options->addAction("Set bot time", this, SLOT(action_setbottime()));
 
 	connect(m_board, SIGNAL(humanPlayed()), this, SLOT(humanPlayed()));
 	connect(&m_bot, SIGNAL(finished()), this, SLOT(botFinished()));
@@ -57,6 +61,7 @@ void MainWindow::newgame_bot()
 
 	m_bot.play(m_board->state(), 0);
 	statusBar()->showMessage("I am thinking...");
+	menuBar()->setDisabled(true);
 
 	m_history.clear();
 	m_action_undo->setDisabled(true);
@@ -65,15 +70,21 @@ void MainWindow::newgame_bot()
 
 void MainWindow::humanPlayed()
 {
-	m_bot.play(m_board->state(), m_board->whoPlays());
-	statusBar()->showMessage("I am thinking...");
-
+	if (m_board->state().getKilled(m_board->whoPlays()) > 6) {
+		statusBar()->showMessage("Congratulations, You win !");
+	} else {
+		m_bot.play(m_board->state(), m_board->whoPlays());
+		statusBar()->showMessage("I am thinking...");
+		menuBar()->setDisabled(true);
+	}
 	while (m_history_position < m_history.size()-1) m_history.removeLast();
 	m_action_redo->setDisabled(true);
 }
 
 void MainWindow::botFinished()
 {
+	menuBar()->setEnabled(true);
+
 	m_board->setState(m_bot.getResult());
 	m_board->nextTurn();
 	if (m_board->state().possibilities(m_board->whoPlays()).isEmpty()) {
@@ -81,10 +92,12 @@ void MainWindow::botFinished()
 		statusBar()->showMessage("You cannot play, you pass your turn");
 		m_bot.play(m_board->state(), m_board->whoPlays());
 	}
-
-	statusBar()->showMessage("Ok, Now it's your turn");
-	m_board->acceptHumanEntry();
-
+	if (m_board->state().getKilled(m_board->whoPlays()) > 6) {
+		statusBar()->showMessage("I won that match.");
+	} else {
+		statusBar()->showMessage("Ok, Now it's your turn");
+		m_board->acceptHumanEntry();
+	}
 	m_history << m_board->state();
 	m_history_position = m_history.size() - 1;
 	if (m_history_position > 0) m_action_undo->setEnabled(true);
@@ -92,20 +105,32 @@ void MainWindow::botFinished()
 
 void MainWindow::undo()
 {
+	if (m_bot.isRunning()) return;
 	if (m_history_position > 0) {
 		m_history_position--;
 		m_board->setState(m_history[m_history_position]);
 		m_action_redo->setEnabled(true);
 		if (m_history_position == 0) m_action_undo->setDisabled(true);
+	} else {
+		m_action_undo->setDisabled(true);
 	}
 }
 
 void MainWindow::redo()
 {
+	if (m_bot.isRunning()) return;
 	if (m_history_position+1 < m_history.size()) {
 		m_history_position++;
 		m_board->setState(m_history[m_history_position]);
 		m_action_undo->setEnabled(true);
 		if (m_history_position == m_history.size() - 1) m_action_redo->setDisabled(true);
+	} else {
+		m_action_redo->setDisabled(true);
 	}
+}
+
+void MainWindow::action_setbottime()
+{
+	int ans = QInputDialog::getInt(this, "Bot Max Time", "The time allowed for the bot to think about the next move. Value in milliseconds.", m_bot.maxTime(), 0);
+	m_bot.setMaxTime(ans);
 }

@@ -15,11 +15,12 @@ public:
 
 	inline const MillState& getResult() const { return m_result; }
 
+	inline int maxTime() const { return m_maxtime; }
 	inline void setMaxTime(int maxtime) { m_maxtime = maxtime; }
 
 private:
 	bool private_play(const MillState& initialstate, int player, int deepness, MillState& result);
-	bool private_play_more(const MillState& initialstate, int player, int deepness, double& score);
+	bool private_play_more(const MillState& initialstate, int player, int deepness, double& score, double alpha, double beta);
 
 	void run() override;
 

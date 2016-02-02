@@ -20,6 +20,7 @@ private slots:
 	void botFinished();
 	void undo();
 	void redo();
+	void action_setbottime();
 
 private:
 	Board* m_board;

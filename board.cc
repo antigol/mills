@@ -1,6 +1,7 @@
 #include "board.hh"
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsEllipseItem>
+#include <QApplication>
 
 constexpr double a = 30, b = 65, c = 100, r = 10;
 constexpr double positions[3*8][2] = {
@@ -46,13 +47,16 @@ Board::Board(QObject* parent) : QGraphicsScene(parent)
 	setState(MillState());
 
 	m_waitHuman = false;
-	m_timeline.setDuration(500);
-	connect(&m_timeline, SIGNAL(valueChanged(qreal)), SLOT(drawMovement(qreal)));
+	m_timeline.setDuration(200);
+	connect(&m_timeline, SIGNAL(valueChanged(qreal)), SLOT(drawMigration(qreal)));
 }
 
 void Board::setState(const MillState& state)
 {
-	this->m_state = state;
+	while (m_timeline.state() == QTimeLine::Running) {
+		QApplication::instance()->processEvents(QEventLoop::AllEvents, 10);
+	}
+
 	m_selected = nullptr;
 	m_choosetoremove = false;
 
@@ -62,46 +66,74 @@ void Board::setState(const MillState& state)
 		}
 	}
 
-	int i[2] = {0, 0};
+
+	QList<int> orig[2];
+	QList<int> dest[2];
 
 	for (int k = 0; k < 24; ++k) {
-		int p = state.getPlayerAt(k);
-		if (p != -1) {
-			auto pce = m_pieces[p][i[p]];
-			i[p]++;
+		int p0 = m_state.getPlayerAt(k);
+		int p1 = state.getPlayerAt(k);
 
-			//pce->setPos(positions[k][0], positions[k][1]);
-			pce->setData(INITIALPOS, pce->pos());
-			pce->setData(FINALPOS, QPointF(positions[k][0], positions[k][1]));
-			pce->setData(CELLPOS, k);
-			//pce->show();
-		}
+		if (p0 != -1) orig[p0] << k;
+		if (p1 != -1) dest[p1] << k;
 	}
+
 	for (int p : {0, 1}) {
-		while (i[p] < 9 - state.getNotPlaced(p)) {
-			auto pce = m_pieces[p][i[p]];
-
-			//pce->setPos(2*c, 0); // out of screen
-			pce->setData(INITIALPOS, pce->pos());
-			pce->setData(FINALPOS, QPointF((2*p-1)*2*c, 0));
-			pce->setData(CELLPOS, -1);
-			//pce->show();
-
-			i[p]++;
+		for (int i = 0; i < state.getNotPlaced(p); ++i) {
+			dest[p] << -9+i;
 		}
-		int inc = 0;
-		while (i[p] < 9) {
-			auto pce = m_pieces[p][i[p]];
+		for (int i = 0; i < m_state.getNotPlaced(p); ++i) {
+			orig[p] << -9+i;
+		}
 
-			//pce->setPos((2*p-1)*(c+3*r), -c+(inc++)*2*c/8);
-			pce->setData(INITIALPOS, pce->pos());
-			pce->setData(FINALPOS, QPointF((2*p-1)*(c+3*r), -c+(inc++)*2*c/8));
-			pce->setData(CELLPOS, -1);
-			//pce->show();
-
-			i[p]++;
+		for (int i = 0; i < state.getKilled(p); ++i) {
+			dest[p] << -1-i;
+		}
+		for (int i = 0; i < m_state.getKilled(p); ++i) {
+			orig[p] << -1-i;
 		}
 	}
+
+
+	for (int p : {0, 1}) {
+		Q_ASSERT(orig[p].size() == dest[p].size());
+		Q_ASSERT(orig[p].size() == 9);
+
+		qSort(orig[p]);
+		qSort(dest[p]);
+		int end = 9;
+		for (int i = 0; i < end; ++i) {
+			if (orig[p][i] < dest[p][i]) {
+				orig[p].move(i, 8);
+				i--;
+				end--;
+			} else if (dest[p][i] < orig[p][i]) {
+				dest[p].move(i, 8);
+				i--;
+				end--;
+			}
+		}
+
+
+		for (int i = 0; i < 9; ++i) {
+			int k0 = orig[p][i];
+			int k1 = dest[p][i];
+			QPointF posi0, posi1;
+
+			if (k0 >= 0) posi0 = QPointF(positions[k0][0], positions[k0][1]);
+			else posi0 = QPointF((2*p-1)*(c+3*r), c+c*(k0+1.0)/4.0);
+
+			if (k1 >= 0) posi1 = QPointF(positions[k1][0], positions[k1][1]);
+			else posi1 = QPointF((2*p-1)*(c+3*r), c+c*(k1+1.0)/4.0);
+
+			auto pce = m_pieces[p][i];
+			pce->setData(INITIALPOS, posi0);
+			pce->setData(FINALPOS, posi1);
+			pce->setData(CELLPOS, k1);
+		}
+	}
+
+	this->m_state = state;
 
 	m_timeline.start();
 }
@@ -111,18 +143,26 @@ void Board::acceptHumanEntry()
 	m_waitHuman = true;
 }
 
-void Board::drawMovement(qreal value)
+void Board::drawMigration(qreal value)
 {
 	for (int p : {0, 1}) {
 		for (auto pce : m_pieces[p]) {
 			QPointF p0 = pce->data(INITIALPOS).toPointF();
 			QPointF p1 = pce->data(FINALPOS).toPointF();
-			if (value == 1.0) {
-				pce->setData(INITIALPOS, p1);
-				pce->setPos(p1);
-			} else {
-				pce->setPos((1.0 - value) * p0 + value * p1);
-			}
+			pce->setPos((1.0 - value) * p0 + value * p1);
+		}
+	}
+
+	update();
+}
+
+void Board::finishMigration()
+{
+	for (int p : {0, 1}) {
+		for (auto pce : m_pieces[p]) {
+			QPointF p = pce->data(FINALPOS).toPointF();
+			pce->setData(INITIALPOS, p);
+			pce->setPos(p);
 		}
 	}
 	update();
@@ -157,22 +197,18 @@ void Board::mousePressEvent(QGraphicsSceneMouseEvent* mouse)
 
 		if (m_choosetoremove) {
 			if (there && there->data(PLAYERID).toInt() != m_turn%2 && !m_state.ismill(idthere)) {
-				there->setData(CELLPOS, -1);
-				there->setData(INITIALPOS, there->pos());
-				there->setData(FINALPOS, QPointF((2*(m_turn%2)-1)*2*c, 0));
-				m_state.remove(idthere);
+				MillState state = m_state;
+				state.remove(idthere);
+				setState(state);
 
 				m_turn++;
-				m_choosetoremove = false;
 			}
 		} else if (m_state.getNotPlaced(1) > 0) {
 			if (there == nullptr) {
-				auto piece = m_pieces[m_turn%2].last();
-				//piece->setPos(x, y);
-				piece->setData(INITIALPOS, piece->pos());
-				piece->setData(FINALPOS, QPointF(x, y));
-				piece->setData(CELLPOS, idthere);
-				m_state.add(m_turn%2, idthere);
+				MillState state = m_state;
+				state.add(m_turn%2, idthere);
+				setState(state);
+
 				if (m_state.ismill(idthere) && !m_state.eatable(1 - m_turn%2).isEmpty())
 					m_choosetoremove = true;
 				else
@@ -188,13 +224,9 @@ void Board::mousePressEvent(QGraphicsSceneMouseEvent* mouse)
 			} else if (m_selected != nullptr && there == nullptr) {
 				int idfrom = m_selected->data(CELLPOS).toInt();
 				if (m_state.getOnBoard(m_turn%2) <= 3 || connectedto[idfrom].contains(idthere)) {
-					m_state.move(idfrom, idthere);
-					//m_selected->setPos(x, y);
-					m_selected->setData(INITIALPOS, m_selected->pos());
-					m_selected->setData(FINALPOS, QPointF(x, y));
-					m_selected->setData(CELLPOS, idthere);
-					m_selected->setBrush(m_color[m_selected->data(PLAYERID).toInt()]);
-					m_selected = nullptr;
+					MillState state = m_state;
+					state.move(idfrom, idthere);
+					setState(state);
 
 					if (m_state.ismill(idthere) && !m_state.eatable(1 - m_turn%2).isEmpty())
 						m_choosetoremove = true;
@@ -203,7 +235,6 @@ void Board::mousePressEvent(QGraphicsSceneMouseEvent* mouse)
 				}
 			}
 		}
-		m_timeline.start();
 
 	} else {
 		if (m_selected) {
