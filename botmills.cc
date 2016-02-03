@@ -30,7 +30,7 @@ bool BotMills::private_play(int deepness)
 	double beta  =  infinity;
 
 	double bestValue = -infinity;
-	QList<MillState> bestMoves;
+	MillState bestMove;
 
 	for (const MillState& child : children) {
 
@@ -38,20 +38,23 @@ bool BotMills::private_play(int deepness)
 		if (!ok) return false;
 		// alpha <= v <= beta
 
+
 		if (v > bestValue) {
 			bestValue = v;
-			bestMoves.clear();
-			bestMoves << child;
-		} else if (v == bestValue) {
-			bestMoves << child;
+			bestMove = child;
 		}
 
+		/** Avec l'élagage alphabeta, seule le premier bestMove est un vrai best move.
+		  * Les mouvements qui suiveront avec le même score seront potentiellement mauvais !
+		  */
 		if (v > alpha) alpha = v;
 	}
 
+
 	if (bestValue >= 10) m_whowin = m_player;
 	if (bestValue <= 10) m_whowin = 1 - m_player;
-	m_result = bestMoves[qrand() % bestMoves.size()];
+
+	m_result = bestMove;
 	return true;
 }
 
@@ -95,6 +98,7 @@ void BotMills::run()
 
 	if (m_initialstate.possibilities(m_player).isEmpty()) {
 		m_result = m_initialstate;
+		qDebug("game blocked");
 		return;
 	}
 
