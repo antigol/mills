@@ -10,29 +10,26 @@ MillState::MillState()
 
 void MillState::add(int player, int pos)
 {
-	//if (notplaced[player] > 0 && cs[pos] == -1) {
-		notplaced[player]--;
-		onboard[player]++;
-		cs[pos] = player;
-	//}
+	Q_ASSERT(notplaced[player] > 0 && cs[pos] == -1);
+	notplaced[player]--;
+	onboard[player]++;
+	cs[pos] = player;
 }
 
 void MillState::move(int from, int to)
 {
-	//if (cs[from] != -1 && cs[to] == -1) {
-		cs[to] = cs[from];
-		cs[from] = -1;
-	//}
+	Q_ASSERT(cs[from] != -1 && cs[to] == -1);
+	cs[to] = cs[from];
+	cs[from] = -1;
 }
 
 void MillState::remove(int pos)
 {
-	//if (cs[pos] != -1) {
-		int player = cs[pos];
-		onboard[player]--;
-		killed[player]++;
-		cs[pos] = -1;
-	//}
+	Q_ASSERT(cs[pos] != -1);
+	int player = cs[pos];
+	onboard[player]--;
+	killed[player]++;
+	cs[pos] = -1;
 }
 
 bool MillState::ismill(int pos) const

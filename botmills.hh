@@ -21,7 +21,7 @@ public:
 
 private:
 	bool private_play(int deepness);
-	double private_play_more(const MillState& initialstate, int player, int deepness, double alpha, double beta, bool& ok);
+	double negamax(const MillState& initialstate, int player, int deepness, double alpha, double beta, bool& ok);
 
 	void run() override;
 

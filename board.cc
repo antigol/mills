@@ -152,6 +152,7 @@ void Board::drawMigration(qreal value)
 void Board::mousePressEvent(QGraphicsSceneMouseEvent* mouse)
 {
 	if (!m_waitHuman) return;
+	if (m_timeline.state() == QTimeLine::Running) return;
 
 	int idthere = 0;
 	int dmin = c;
