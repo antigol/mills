@@ -2,7 +2,7 @@
 
 BotMills::BotMills(QObject *parent) : QThread(parent)
 {
-	m_maxtime = 1000;
+	m_maxtime = 500;
 }
 
 void BotMills::play(MillState initialstate, int player)
@@ -13,74 +13,81 @@ void BotMills::play(MillState initialstate, int player)
 	start();
 }
 
-bool BotMills::private_play(const MillState& initialstate, int player, int deepness, MillState& result)
+constexpr double infinity = 10000.0;
+
+bool BotMills::private_play(int deepness)
 {
-	QVector<MillState> opportunities = initialstate.possibilities(player);
-
-	double bestscore = -1000;
-	QVector<MillState> bestopportunity;
-	for (const MillState& opp : opportunities) {
-		double sc;
-
-		if (opp.getKilled(1-player) > 6) {
-			sc = 100 + deepness;
-		} else if (deepness > 0) {
-			if (!private_play_more(opp, 1-player, deepness-1, sc, -1000.0, 1000.0)) return false;
-			sc = -sc;
-		} else {
-			sc = opp.getKilled(1-player) - opp.getKilled(player);
-		}
-
-		if (sc > bestscore) {
-			bestscore = sc;
-			bestopportunity.clear();
-			bestopportunity << opp;
-		} else if (sc == bestscore) {
-			bestopportunity << opp;
-		}
+	QVector<MillState> opportunities = m_initialstate.possibilities(m_player);
+	int ir = opportunities.indexOf(m_result);
+	if (ir != -1) {
+		opportunities[ir] = opportunities[0];
+		opportunities[0] = m_result;
 	}
 
-	if (bestscore >= 10) m_whowin = player;
-	if (bestscore <= 10) m_whowin = 1 - player;
-	//qDebug("deepness %d player %d : score %.1f (%d possibilities)", deepness, player, bestscore, opportunities.size());
-	result = bestopportunity[qrand() % bestopportunity.size()];
+	bool ok = true;
+
+	double alpha = -infinity;
+	double beta  =  infinity;
+
+	double v = -infinity;
+	QList<MillState> bestopportunities;
+
+	for (const MillState& opp : opportunities) {
+
+		double s = -private_play_more(opp, 1-m_player, deepness - 1, -beta, -alpha, ok);
+		if (!ok) return false;
+		// alpha <= s <= beta
+		//qDebug("%.1f <= %.1f <= %.1f", alpha, s, beta);
+
+		if (s > v) {
+			v = s;
+			bestopportunities.clear();
+			bestopportunities << opp;
+		} else if (s == v) {
+			bestopportunities << opp;
+		}
+
+		if (v > alpha) alpha = v;
+	}
+
+	if (v >= 10) m_whowin = m_player;
+	if (v <= 10) m_whowin = 1 - m_player;
+	//qDebug("deepness %d : score %.1f (%d bestopportunities)", deepness, v, bestopportunities.size());
+	m_result = bestopportunities[qrand() % bestopportunities.size()];
 	return true;
 }
 
-bool BotMills::private_play_more(const MillState& initialstate, int player, int deepness, double& score, double alpha, double beta)
+double BotMills::private_play_more(const MillState& state, int player, int deepness, double alpha, double beta, bool& ok)
 {
-	QVector<MillState> opportunities = initialstate.possibilities(player);
+	if (state.getKilled(player) > 6) {
+		return -10 * (deepness + 1);
+	} else if (deepness == 0) {
+		return state.getKilled(1-player) - state.getKilled(player);
+	}
 
+	QVector<MillState> opportunities = state.possibilities(player);
 	if (opportunities.isEmpty()) {
-		score = 0.0;
-		return true;
+		return 0.0;
+	}
+	if (m_chrono.elapsed() > m_maxtime) {
+		ok = false;
+		return 0.0;
 	}
 
-	if (m_chrono.elapsed() > m_maxtime) return false;
 
-	score = -1000.0;
+	double v = -infinity;
 	for (const MillState& opp : opportunities) {
-		double sc;
+		double s = -private_play_more(opp, 1-player, deepness - 1, -beta, -alpha, ok);
+		if (!ok) return 0.0;
+		// alpha <= s <= beta
 
-		if (opp.getKilled(1-player) > 6) {
-			sc = 10 * (deepness + 1);
-		} else if (deepness > 0) {
-			if (!private_play_more(opp, 1-player, deepness-1, sc, -beta, -alpha)) return false;
-			sc = -sc;
-		} else {
-			sc = opp.getKilled(1-player) - opp.getKilled(player);
-			//sc -= opp.eatable(player).size();
-		}
-
-		if (sc > score) {
-			score = sc;
-			if (score > alpha) {
-				alpha = score;
-				if (alpha >= beta) return true;
-			}
-		}
+		if (s > v) v = s;
+		if (s > alpha) alpha = s;
+		// beta cuf-off
+		if (beta < v) break;
 	}
-	return true;
+
+	return v;
 }
 
 void BotMills::run()
@@ -94,10 +101,14 @@ void BotMills::run()
 	}
 
 	int lasttime = 0;
-	int deepness;
-	for (deepness = 2; m_maxtime - m_chrono.elapsed() > lasttime; ++deepness) {
+	int deepness = 0;
+	while (m_maxtime - m_chrono.elapsed() > lasttime) {
 		lasttime = m_chrono.elapsed();
-		private_play(m_initialstate, m_player, deepness, m_result);
+		deepness++;
+		if (!private_play(deepness)) {
+			deepness--;
+			break;
+		}
 		lasttime = m_chrono.elapsed() - lasttime;
 	}
 	qDebug("deepness %d: time %d", deepness, m_chrono.elapsed());

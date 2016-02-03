@@ -112,6 +112,7 @@ void MainWindow::undo()
 	if (m_history_position > 0) {
 		m_history_position--;
 		m_board->setState(m_history[m_history_position]);
+		m_board->acceptHumanEntry();
 		m_action_redo->setEnabled(true);
 		if (m_history_position == 0) m_action_undo->setDisabled(true);
 	} else {

@@ -20,8 +20,8 @@ public:
 	inline bool whowin() const { return m_whowin; }
 
 private:
-	bool private_play(const MillState& initialstate, int player, int deepness, MillState& result);
-	bool private_play_more(const MillState& initialstate, int player, int deepness, double& score, double alpha, double beta);
+	bool private_play(int deepness);
+	double private_play_more(const MillState& initialstate, int player, int deepness, double alpha, double beta, bool& ok);
 
 	void run() override;
 

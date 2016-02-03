@@ -70,6 +70,8 @@ public:
 	inline int getOnBoard(int player) const { return onboard[player]; }
 	inline int getKilled(int player) const { return killed[player]; }
 
+	bool operator ==(const MillState& other) const;
+
 private:
 	int notplaced[2];
 	int onboard[2];

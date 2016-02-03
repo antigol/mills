@@ -99,6 +99,19 @@ QVector<MillState> MillState::possibilities(int player) const
 	return poss;
 }
 
+bool MillState::operator ==(const MillState& other) const
+{
+	for (int k : {0, 1}) {
+		if (notplaced[k] != other.notplaced[k]) return false;
+		if (onboard[k] != other.onboard[k]) return false;
+		if (killed[k] != other.killed[k]) return false;
+	}
+	for (int k = 0; k < 24; ++k) {
+		if (cs[k] != other.cs[k]) return false;
+	}
+	return true;
+}
+
 void MillState::eataftermill(QVector<MillState>& poss, MillState& state, int player, int pos) const
 {
 	if (state.ismill(pos)) {
