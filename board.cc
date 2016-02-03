@@ -225,8 +225,8 @@ void Board::mousePressEvent(QGraphicsSceneMouseEvent* mouse)
 	}
 
 	if (oldplayer != m_whoplay) {
-		emit humanPlayed();
 		m_waitHuman = false;
+		emit humanPlayed();
 	}
 }
 

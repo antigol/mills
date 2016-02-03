@@ -72,6 +72,10 @@ void MainWindow::humanPlayed()
 {
 	if (m_board->state().getRemoved(m_board->whoPlays()) > 6) {
 		statusBar()->showMessage("Congratulations, You win !");
+	} else if (m_board->state().possibilities(m_board->whoPlays()).isEmpty()) {
+		statusBar()->showMessage("My pices are all blocked, You play again.");
+		m_board->nextTurn();
+		m_board->acceptHumanEntry();
 	} else {
 		m_bot.play(m_board->state(), m_board->whoPlays());
 		statusBar()->showMessage("I am thinking...");
@@ -87,13 +91,13 @@ void MainWindow::botFinished()
 
 	m_board->setState(m_bot.getResult());
 	m_board->nextTurn();
-	if (m_board->state().possibilities(m_board->whoPlays()).isEmpty()) {
+
+	if (m_board->state().getRemoved(m_board->whoPlays()) > 6) {
+		statusBar()->showMessage("I won that match.");
+	} else if (m_board->state().possibilities(m_board->whoPlays()).isEmpty()) {
 		m_board->nextTurn(); // turn of human passes
 		statusBar()->showMessage("You cannot play, you pass your turn");
 		m_bot.play(m_board->state(), m_board->whoPlays());
-	}
-	if (m_board->state().getRemoved(m_board->whoPlays()) > 6) {
-		statusBar()->showMessage("I won that match.");
 	} else {
 		if (m_bot.whowin() == 1 - m_board->whoPlays())
 			statusBar()->showMessage("I already won, but it's your turn");

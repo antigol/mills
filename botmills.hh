@@ -3,7 +3,10 @@
 
 #include <QThread>
 #include <QTime>
+#include <QHash>
 #include "millstate.hh"
+
+#define TTABLE
 
 class BotMills : public QThread
 {
@@ -31,6 +34,15 @@ private:
 	QTime m_chrono;
 	int m_maxtime;
 	int m_whowin;
+
+#ifdef TTABLE
+	struct TTData {
+		enum { Exact, Upperbound, Lowerbound } quality;
+		double value;
+		int depth;
+	};
+	QHash<MillState, TTData> m_transtable[2];
+#endif
 };
 
 #endif // BOTMILLS_H

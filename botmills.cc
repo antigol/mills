@@ -20,8 +20,7 @@ bool BotMills::private_play(int deepness)
 	QVector<MillState> children = m_initialstate.possibilities(m_player);
 	int ir = children.indexOf(m_result);
 	if (ir != -1) {
-		children[ir] = children[0];
-		children[0] = m_result;
+		std::swap(children[ir], children[0]);
 	}
 
 	bool ok = true;
@@ -31,6 +30,11 @@ bool BotMills::private_play(int deepness)
 
 	double bestValue = -infinity;
 	MillState bestMove;
+
+#ifdef TTABLE
+	m_transtable[0].clear();
+	m_transtable[1].clear();
+#endif
 
 	for (const MillState& child : children) {
 
@@ -58,15 +62,34 @@ bool BotMills::private_play(int deepness)
 	return true;
 }
 
-double BotMills::negamax(const MillState& state, int player, int deepness, double alpha, double beta, bool& ok)
+double BotMills::negamax(const MillState& state, int player, int depth, double alpha, double beta, bool& ok)
 {
 	if (state.getRemoved(player) > 6) {
-		return -10 * (deepness + 1);
-	} else if (deepness == 0) {
+		return -10 * (depth + 1);
+	} else if (depth == 0) {
 		return state.getRemoved(1-player) - state.getRemoved(player);
 	}
 
+#ifdef TTABLE
+	double origalpha = alpha;
+	auto it = m_transtable[player].find(state);
+	if (it != m_transtable[player].end()) {
+		TTData& tt = it.value();
+		if (tt.depth >= depth) {
+		if (tt.quality == TTData::Exact) {
+			return tt.value;
+		} else if (tt.quality == TTData::Upperbound) {
+			if (tt.value < beta) beta = tt.value;
+		} else if (tt.quality == TTData::Lowerbound) {
+			if (tt.value > alpha) alpha = tt.value;
+		}
+		if (alpha >= beta) return tt.value;
+		}
+	}
+#endif
+
 	QVector<MillState> children = state.possibilities(player);
+
 	if (children.isEmpty()) {
 		return 0.0;
 	}
@@ -78,7 +101,7 @@ double BotMills::negamax(const MillState& state, int player, int deepness, doubl
 
 	double bestValue = -infinity;
 	for (const MillState& child : children) {
-		double v = -negamax(child, 1-player, deepness - 1, -beta, -alpha, ok);
+		double v = -negamax(child, 1-player, depth - 1, -beta, -alpha, ok);
 		if (!ok) return 0.0;
 		// alpha <= v <= beta
 
@@ -87,6 +110,16 @@ double BotMills::negamax(const MillState& state, int player, int deepness, doubl
 		// beta cuf-off
 		if (alpha >= beta) break;
 	}
+
+#ifdef TTABLE
+	TTData tt;
+	if (bestValue <= origalpha) tt.quality = TTData::Upperbound;
+	else if (bestValue >= beta) tt.quality = TTData::Lowerbound;
+	else tt.quality = TTData::Exact;
+	tt.value = bestValue;
+	tt.depth = depth;
+	m_transtable[player].insert(state, tt);
+#endif
 
 	return bestValue;
 }

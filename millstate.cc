@@ -119,10 +119,21 @@ void MillState::eataftermill(QVector<MillState>& poss, MillState& state, int pla
 			for (int a : eas) {
 				MillState clone = state;
 				clone.remove(a);
-				poss << clone;
+				poss.prepend(clone); // try to beter order to improve alphabeta cutoff
 			}
 		}
 	} else {
 		poss << state;
 	}
+}
+
+uint qHash(const MillState& key, uint seed)
+{
+	uint r = seed;
+	for (int i = 0; i < 24; ++i) {
+		r ^= (key.cs[i] << i);
+	}
+	r ^= (key.notplaced[0] << 25);
+	r ^= (key.notplaced[1] << 28);
+	return r;
 }

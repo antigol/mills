@@ -79,6 +79,10 @@ private:
 	int cs[24]; // -1=empty
 
 	void eataftermill(QVector<MillState>& poss, MillState& state, int player, int pos) const;
+
+	friend uint qHash(const MillState& key, uint seed);
 };
+
+uint qHash(const MillState& key, uint seed = 0);
 
 #endif // MILLSTATE_HH
