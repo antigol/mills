@@ -84,7 +84,7 @@ double BotMills::private_play_more(const MillState& state, int player, int deepn
 		if (s > v) v = s;
 		if (s > alpha) alpha = s;
 		// beta cuf-off
-		if (beta < v) break;
+		if (beta < v) break; // the strict inequality is needed, otherwise => dumb AI
 	}
 
 	return v;
