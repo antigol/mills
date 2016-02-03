@@ -73,7 +73,7 @@ QList<MillState> MillState::possibilities(int player) const
 		}
 		for (int j = 0; j < 24; ++j) {
 			if (cs[j] == -1) {
-				for (int i : occupied) {
+				foreach (int i, occupied) {
 					MillState clone = *this;
 					clone.move(i, j);
 					eataftermill(poss, clone, player, j);
@@ -83,7 +83,7 @@ QList<MillState> MillState::possibilities(int player) const
 	} else {
 		for (int i = 0; i < 24; ++i) {
 			if (cs[i] == player) {
-				for (int j : connectedto[i]) {
+				foreach (int j, connectedto[i]) {
 					if (cs[j] == -1) {
 						MillState clone = *this;
 						clone.move(i, j);
@@ -110,6 +110,23 @@ bool MillState::operator ==(const MillState& other) const
 	return true;
 }
 
+bool MillState::operator <(const MillState& other) const
+{
+	for (int i = 0; i < 24; ++i) {
+		if (cs[i] < other.cs[i]) return true;
+		if (cs[i] > other.cs[i]) return false;
+	}
+	for (int k : {0, 1}) {
+		if (notplaced[k] < other.notplaced[k]) return true;
+		if (notplaced[k] > other.notplaced[k]) return false;
+		if (onboard[k] < other.onboard[k]) return true;
+		if (onboard[k] > other.onboard[k]) return false;
+		if (removed[k] < other.removed[k]) return true;
+		if (removed[k] > other.removed[k]) return false;
+	}
+	return false;
+}
+
 void MillState::eataftermill(QList<MillState>& poss, MillState& state, int player, int pos) const
 {
 	if (state.ismill(pos)) {
@@ -117,7 +134,7 @@ void MillState::eataftermill(QList<MillState>& poss, MillState& state, int playe
 		if (eas.isEmpty()) {
 			poss << state;
 		} else {
-			for (int a : eas) {
+			foreach (int a, eas) {
 				MillState clone = state;
 				clone.remove(a);
 				poss.prepend(clone); // try to beter order to improve alphabeta cutoff
