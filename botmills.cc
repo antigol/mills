@@ -1,4 +1,6 @@
 #include "botmills.hh"
+#include <algorithm>
+#include <random>
 
 BotMills::BotMills(QObject *parent) : QThread(parent)
 {
@@ -13,15 +15,19 @@ void BotMills::play(MillState initialstate, int player)
 	start();
 }
 
+std::mt19937 randomEngine()
+{
+	static std::random_device seed;
+	static std::mt19937 rng(seed());
+	return rng;
+}
+
 constexpr double infinity = 10000.0;
 
 bool BotMills::private_play(int deepness)
 {
-	QVector<MillState> children = m_initialstate.possibilities(m_player);
-	int ir = children.indexOf(m_result);
-	if (ir != -1) {
-		std::swap(children[ir], children[0]);
-	}
+	QList<MillState> children = m_initialstate.possibilities(m_player);
+	std::shuffle(children.begin(), children.end(), randomEngine());
 
 	bool ok = true;
 
@@ -88,7 +94,7 @@ double BotMills::negamax(const MillState& state, int player, int depth, double a
 	}
 #endif
 
-	QVector<MillState> children = state.possibilities(player);
+	QList<MillState> children = state.possibilities(player);
 
 	if (children.isEmpty()) {
 		return 0.0;

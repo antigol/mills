@@ -63,7 +63,7 @@ public:
 
 	bool ismill(int pos) const;
 	QVector<int> eatable(int player) const;
-	QVector<MillState> possibilities(int player) const;
+	QList<MillState> possibilities(int player) const;
 
 	inline int getPlayerAt(int pos) const { return cs[pos]; }
 	inline int getNotPlaced(int player) const { return notplaced[player]; }
@@ -78,7 +78,7 @@ private:
 	int removed[2];
 	int cs[24]; // -1=empty
 
-	void eataftermill(QVector<MillState>& poss, MillState& state, int player, int pos) const;
+	void eataftermill(QList<MillState>& poss, MillState& state, int player, int pos) const;
 
 	friend uint qHash(const MillState& key, uint seed);
 };

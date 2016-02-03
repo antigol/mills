@@ -44,15 +44,16 @@ bool MillState::ismill(int pos) const
 QVector<int> MillState::eatable(int player) const
 {
 	QVector<int> eas;
+	eas.reserve(9);
 	for (int i = 0; i < 24; ++i) {
 		if (cs[i] == player && !ismill(i)) eas.append(i);
 	}
 	return eas;
 }
 
-QVector<MillState> MillState::possibilities(int player) const
+QList<MillState> MillState::possibilities(int player) const
 {
-	QVector<MillState> poss;
+	QList<MillState> poss;
 	poss.reserve(32);
 
 	if (notplaced[player] > 0) {
@@ -109,7 +110,7 @@ bool MillState::operator ==(const MillState& other) const
 	return true;
 }
 
-void MillState::eataftermill(QVector<MillState>& poss, MillState& state, int player, int pos) const
+void MillState::eataftermill(QList<MillState>& poss, MillState& state, int player, int pos) const
 {
 	if (state.ismill(pos)) {
 		QVector<int> eas = state.eatable(1 - player);
