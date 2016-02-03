@@ -68,14 +68,14 @@ public:
 	inline int getPlayerAt(int pos) const { return cs[pos]; }
 	inline int getNotPlaced(int player) const { return notplaced[player]; }
 	inline int getOnBoard(int player) const { return onboard[player]; }
-	inline int getKilled(int player) const { return killed[player]; }
+	inline int getRemoved(int player) const { return removed[player]; }
 
 	bool operator ==(const MillState& other) const;
 
 private:
 	int notplaced[2];
 	int onboard[2];
-	int killed[2];
+	int removed[2];
 	int cs[24]; // -1=empty
 
 	void eataftermill(QVector<MillState>& poss, MillState& state, int player, int pos) const;

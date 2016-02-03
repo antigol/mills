@@ -57,10 +57,10 @@ bool BotMills::private_play(int deepness)
 
 double BotMills::negamax(const MillState& state, int player, int deepness, double alpha, double beta, bool& ok)
 {
-	if (state.getKilled(player) > 6) {
+	if (state.getRemoved(player) > 6) {
 		return -10 * (deepness + 1);
 	} else if (deepness == 0) {
-		return state.getKilled(1-player) - state.getKilled(player);
+		return state.getRemoved(1-player) - state.getRemoved(player);
 	}
 
 	QVector<MillState> children = state.possibilities(player);

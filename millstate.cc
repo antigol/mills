@@ -5,7 +5,7 @@ MillState::MillState()
 	for (int i = 0; i < 24; ++i) cs[i] = -1;
 	notplaced[0] = notplaced[1] = 9;
 	onboard[0]   = onboard[1]   = 0;
-	killed[0]    = killed[1]    = 0;
+	removed[0]    = removed[1]    = 0;
 }
 
 void MillState::add(int player, int pos)
@@ -28,7 +28,7 @@ void MillState::remove(int pos)
 	Q_ASSERT(cs[pos] != -1);
 	int player = cs[pos];
 	onboard[player]--;
-	killed[player]++;
+	removed[player]++;
 	cs[pos] = -1;
 }
 
@@ -101,7 +101,7 @@ bool MillState::operator ==(const MillState& other) const
 	for (int k : {0, 1}) {
 		if (notplaced[k] != other.notplaced[k]) return false;
 		if (onboard[k] != other.onboard[k]) return false;
-		if (killed[k] != other.killed[k]) return false;
+		if (removed[k] != other.removed[k]) return false;
 	}
 	for (int k = 0; k < 24; ++k) {
 		if (cs[k] != other.cs[k]) return false;

@@ -87,10 +87,10 @@ void Board::setState(const MillState& state)
 			orig[p] << -9+i;
 		}
 
-		for (int i = 0; i < state.getKilled(p); ++i) {
+		for (int i = 0; i < state.getRemoved(p); ++i) {
 			dest[p] << -1-i;
 		}
-		for (int i = 0; i < m_state.getKilled(p); ++i) {
+		for (int i = 0; i < m_state.getRemoved(p); ++i) {
 			orig[p] << -1-i;
 		}
 	}

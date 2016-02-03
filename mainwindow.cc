@@ -70,7 +70,7 @@ void MainWindow::newgame_bot()
 
 void MainWindow::humanPlayed()
 {
-	if (m_board->state().getKilled(m_board->whoPlays()) > 6) {
+	if (m_board->state().getRemoved(m_board->whoPlays()) > 6) {
 		statusBar()->showMessage("Congratulations, You win !");
 	} else {
 		m_bot.play(m_board->state(), m_board->whoPlays());
@@ -92,7 +92,7 @@ void MainWindow::botFinished()
 		statusBar()->showMessage("You cannot play, you pass your turn");
 		m_bot.play(m_board->state(), m_board->whoPlays());
 	}
-	if (m_board->state().getKilled(m_board->whoPlays()) > 6) {
+	if (m_board->state().getRemoved(m_board->whoPlays()) > 6) {
 		statusBar()->showMessage("I won that match.");
 	} else {
 		if (m_bot.whowin() == 1 - m_board->whoPlays())
