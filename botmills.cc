@@ -77,7 +77,7 @@ double BotMills::negamax(const MillState& state, int player, int depth, double a
 		return -10 * (depth + 1);
 	} else if (depth == 0) {
 		return state.getRemoved(1-player) - state.getRemoved(player)
-				+ 0.1 * (state.possibilities(player).size() - state.possibilities(1-player).size());
+				+ 0.01 * (state.countMoves(player) - state.countMoves(1-player));
 	}
 
 #ifdef TTABLE
@@ -148,7 +148,7 @@ void BotMills::run()
 	}
 
 	int lasttime = 0;
-	int deepness = 0;
+	int deepness = 1;
 	while (m_maxtime - m_chrono.elapsed() > lasttime) {
 		lasttime = m_chrono.elapsed();
 		deepness++;

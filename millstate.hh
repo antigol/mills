@@ -64,6 +64,7 @@ public:
 	bool ismill(int pos) const;
 	QVector<int> eatable(int player) const;
 	QList<MillState> possibilities(int player) const;
+	int countMoves(int player) const;
 
 	inline int getPlayerAt(int pos) const { return cs[pos]; }
 	inline int getNotPlaced(int player) const { return notplaced[player]; }
