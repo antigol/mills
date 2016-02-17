@@ -3,7 +3,8 @@
 
 #include <QThread>
 #include <QTime>
-#include <QHash>
+#include <QMultiHash>
+#include <QMultiMap>
 #include "millstate.hh"
 
 #define TTABLE
@@ -41,7 +42,7 @@ private:
 		double value;
 		int depth;
 	};
-	QHash<MillState, TTData> m_transtable[2];
+	QMultiMap<MillState, TTData> m_transtable[2];
 #endif
 };
 

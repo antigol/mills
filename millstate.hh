@@ -71,6 +71,7 @@ public:
 	inline int getRemoved(int player) const { return removed[player]; }
 
 	bool operator ==(const MillState& other) const;
+	bool operator <(const MillState& other) const;
 
 private:
 	int notplaced[2];

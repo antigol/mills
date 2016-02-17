@@ -42,7 +42,8 @@ bool BotMills::private_play(int deepness)
 	m_transtable[1].clear();
 #endif
 
-	for (const MillState& child : children) {
+	for (int i = 0; i < children.size(); ++i) {
+		const MillState& child = children[i];
 
 		double v = -negamax(child, 1-m_player, deepness - 1, -beta, -alpha, ok);
 		if (!ok) return false;
@@ -82,8 +83,8 @@ double BotMills::negamax(const MillState& state, int player, int depth, double a
 #ifdef TTABLE
 	double origalpha = alpha;
 	auto it = m_transtable[player].find(state);
-	if (it != m_transtable[player].end()) {
-		TTData& tt = it.value();
+	while (it != m_transtable[player].end() && it.key() == state) {
+		const TTData& tt = it.value();
 		if (tt.depth >= depth) {
 			if (tt.quality == TTData::Exact) {
 				return tt.value;
@@ -94,6 +95,7 @@ double BotMills::negamax(const MillState& state, int player, int depth, double a
 			}
 			if (alpha >= beta) return tt.value;
 		}
+		++it;
 	}
 #endif
 
@@ -108,7 +110,9 @@ double BotMills::negamax(const MillState& state, int player, int depth, double a
 	}
 
 	double bestValue = -infinity;
-	for (const MillState& child : children) {
+	for (int i = 0; i < children.size(); ++i) {
+		const MillState& child = children[i];
+
 		double v = -negamax(child, 1-player, depth - 1, -beta, -alpha, ok);
 		if (!ok) return 0.0;
 		// alpha <= v <= beta
@@ -153,6 +157,6 @@ void BotMills::run()
 			break;
 		}
 		lasttime = m_chrono.elapsed() - lasttime;
+		qDebug("deepness %d: time %d", deepness, m_chrono.elapsed());
 	}
-	qDebug("deepness %d: time %d", deepness, m_chrono.elapsed());
 }
