@@ -55,14 +55,16 @@ bool BotMills::private_play(int deepness)
 		}
 
 		/** Avec l'élagage alphabeta, seule le premier bestMove est un vrai best move.
-		  * Les mouvements qui suiveront avec le même score seront potentiellement mauvais !
-		  */
+			* Les mouvements qui suiveront avec le même score seront potentiellement mauvais !
+			*/
 		if (v > alpha) alpha = v;
 	}
 
 
 	if (bestValue >= 10) m_whowin = m_player;
 	if (bestValue <= 10) m_whowin = 1 - m_player;
+
+	qDebug("best value = %f", bestValue);
 
 	m_result = bestMove;
 	return true;
@@ -73,7 +75,8 @@ double BotMills::negamax(const MillState& state, int player, int depth, double a
 	if (state.getRemoved(player) > 6) {
 		return -10 * (depth + 1);
 	} else if (depth == 0) {
-		return state.getRemoved(1-player) - state.getRemoved(player);
+		return state.getRemoved(1-player) - state.getRemoved(player)
+				+ 0.1 * (state.possibilities(player).size() - state.possibilities(1-player).size());
 	}
 
 #ifdef TTABLE
@@ -82,28 +85,27 @@ double BotMills::negamax(const MillState& state, int player, int depth, double a
 	if (it != m_transtable[player].end()) {
 		TTData& tt = it.value();
 		if (tt.depth >= depth) {
-		if (tt.quality == TTData::Exact) {
-			return tt.value;
-		} else if (tt.quality == TTData::Upperbound) {
-			if (tt.value < beta) beta = tt.value;
-		} else if (tt.quality == TTData::Lowerbound) {
-			if (tt.value > alpha) alpha = tt.value;
-		}
-		if (alpha >= beta) return tt.value;
+			if (tt.quality == TTData::Exact) {
+				return tt.value;
+			} else if (tt.quality == TTData::Upperbound) {
+				if (tt.value < beta) beta = tt.value;
+			} else if (tt.quality == TTData::Lowerbound) {
+				if (tt.value > alpha) alpha = tt.value;
+			}
+			if (alpha >= beta) return tt.value;
 		}
 	}
 #endif
 
 	QList<MillState> children = state.possibilities(player);
-
-	if (children.isEmpty()) {
-		return 0.0;
-	}
 	if (m_chrono.elapsed() >= m_maxtime) {
 		ok = false;
 		return 0.0;
 	}
 
+	if (children.isEmpty()) {
+		return -negamax(state, 1-player, depth - 1, -beta, -alpha, ok);
+	}
 
 	double bestValue = -infinity;
 	for (const MillState& child : children) {
